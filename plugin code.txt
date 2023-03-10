@@ -1,0 +1,138 @@
+ts code 
+// This plugin will open a window to prompt the user to enter a number, and
+// it will then create that many rectangles on the screen.
+
+// This file holds the main code for the plugins. It has access to the *document*.
+// You can access browser APIs in the <script> tag inside "ui.html" which has a
+// full browser environment (see documentation).
+
+// This shows the HTML page in "ui.html".
+figma.showUI(__html__);
+
+// Calls to "parent.postMessage" from within the HTML page will trigger this
+// callback. The callback will be passed the "pluginMessage" property of the
+// posted message.
+figma.ui.onmessage = async(msg) => {
+  // One way of distinguishing between different types of messages sent from
+  // your HTML page is to use an object with a "type" property like this.
+  if (msg.type === 'create-rectangles') {
+    const nodes: SceneNode[] = [];
+    var frameArray = [];
+    var i = msg.count;
+    var counter = 0;
+    var sortedFrameArray = [];
+    var frameNodes = figma.currentPage.findAllWithCriteria({types:['FRAME']});
+    
+
+    for (const node of figma.currentPage.selection) {
+      // frameArray[0] = node.id;
+      // frameArray[i][1] = node.x;
+      // frameArray[i][2] = node.y;
+      frameArray.push({
+        id: node.id,
+        x: node.x,
+        y: node.y
+      })
+    }
+    
+    sortedFrameArray=  frameArray.sort( function(a, b) {
+      return (a.x - b.x) || (a.y - b.y);
+    });
+
+    
+    await figma.loadFontAsync({ family: "Inter", style: "Regular" });
+    await figma.loadFontAsync({ family: "Roboto", style: "Regular" });
+    for (const obj of figma.currentPage.selection) {
+      let newObj = obj as FrameNode;
+      let x = findIndexOf(obj.id,sortedFrameArray,i);
+      if(!newObj.findChild(n => n.name === 'PageNumberText')){
+        var text = figma.createText();
+        text.name = 'PageNumberText';
+        text.characters = x;
+        text.fontName = ({ family: "Roboto", style: "Regular" });
+        text.fontSize = 18;
+        text.textAlignHorizontal ='RIGHT';
+        text.fills = [{ type: 'SOLID', color: { r: 71/255, g: 73/255, b: 90/255 } }];
+        if(msg.paddingFlipper<0){
+          text.x = newObj.width - msg.xVal - text.width;
+          text.y = newObj.height - msg.yVal - text.height;
+        }
+        else{
+          text.x = msg.xVal - text.width;
+          text.y = msg.yVal - text.height;
+        }
+        newObj.appendChild(text);
+      }
+      else{
+        var textChild = newObj.findChild(n => n.name === 'PageNumberText') as TextNode;
+        textChild.characters = x;
+        if(msg.paddingFlipper<0){
+          textChild.x = newObj.width - msg.xVal - textChild.width;
+          text.y = newObj.height - msg.yVal - textChild.height;
+        }
+        else{
+          textChild.x = msg.xVal - textChild.width;
+          textChild.y = msg.yVal - textChild.height;
+        }
+      }
+    }
+
+    figma.notify("Added page number successfully ✨");
+
+  }
+
+
+
+
+  // Make sure to close the plugin when you're done. Otherwise the plugin will
+  // keep running, which shows the cancel button at the bottom of the screen.
+  figma.closePlugin();
+};
+
+
+function findIndexOf(id: string, sortedFrameArray: any[], i: number): string {
+  for(const obj of sortedFrameArray){
+    if(obj.id === id){
+      return '' + i;
+    }
+    i++;
+  }
+}
+
+
+
+
+--------------------------------------------------------------------------------------
+
+HTML Code
+
+<p>Start From: <input id="start" value="1"></p>
+<p>Padding</p>
+<p>
+  <input type="radio" id="topLeft" value=1 name="paddingType"> Top-Left
+  <input type="radio" id="bottomRight" value=-1 checked name="paddingType"> Bottom-Right</p>
+<p>x : <input id="xcor" value="83"></p>
+<p>y : <input id="ycor" value="44"></p>
+<button id="create">Create</button>
+<button id="cancel">Cancel</button>
+<script>
+
+document.getElementById('create').onclick = () => {
+  const textbox = document.getElementById('start');
+  const count = parseInt(textbox.value, 10);
+
+  const xBox = document.getElementById('xcor');
+  const xVal = xBox.value;
+
+  const yBox = document.getElementById('ycor');
+  const yVal = yBox.value;
+
+  const paddingFlipper = document.querySelector("input[name=paddingType]:checked").value;
+  parent.postMessage({ pluginMessage: { type: 'create-rectangles', count, paddingFlipper, xVal, yVal} }, '*')
+}
+
+document.getElementById('cancel').onclick = () => {
+  parent.postMessage({ pluginMessage: { type: 'cancel' } }, '*')
+}
+
+</script>

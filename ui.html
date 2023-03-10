@@ -1,0 +1,158 @@
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/gh/thomas-lowry/figma-plugin-ds/dist/figma-plugin-ds.css"
+/>
+
+<style>
+  body {
+    padding: 2em;
+  }
+  .radioField {
+    width: 40%;
+    margin: 10px;
+  }
+  .radioMain {
+    width: max-content;
+    display: flex;
+  }
+</style>
+
+<div class="onboarding-tip">
+  <div class="icon icon--warning icon--purple"></div>
+  <div class="onboarding-tip__msg">
+    This works on <b>Frames only</b>. So only run plugin after selecting desired
+    frames to be numbered
+  </div>
+</div>
+<p>Start from <input id="start" class="input__field" value="1" /></p>
+
+Numbering mode
+<div class="radio">
+  <input
+    type="radio"
+    class="radio__button"
+    id="column"
+    value="1"
+    name="numberingType"
+  />
+  <label for="column" class="radio__label"> ↓ Column-wise</label>
+
+  <input
+    type="radio"
+    id="row"
+    class="radio__button"
+    value="-1"
+    checked
+    name="numberingType"
+  />
+  <label for="row" class="radio__label"> → Row-wise</label>
+</div>
+<p></p>
+
+Padding type
+<div class="radio">
+  <input
+    type="radio"
+    class="radio__button"
+    id="topLeft"
+    value="1"
+    name="paddingType"
+  />
+  <label for="topLeft" class="radio__label">Top-Left</label>
+
+  <input
+    type="radio"
+    id="bottomRight"
+    class="radio__button"
+    value="-1"
+    checked
+    name="paddingType"
+  />
+  <label for="bottomRight" class="radio__label">Bottom-Right</label>
+</div>
+<p></p>
+Padding values
+<div class="radioMain">
+  <div class="radioField">
+    <label for="xcor">x</label>
+    <input id="xcor" class="input__field" type="number" />
+  </div>
+
+  <div class="radioField">
+    <label for="ycor">y</label>
+    <input id="ycor" class="input__field" type="number" />
+  </div>
+</div>
+<p></p>
+
+<button class="button button--primary" id="create">Add Page Number</button>
+<script>
+  const xBox = document.getElementById("xcor");
+  const yBox = document.getElementById("ycor");
+  const topLeft = document.getElementById("topLeft");
+  const bottomRight = document.getElementById("bottomRight");
+  const pageNumber = document.getElementById("start");
+  const row = document.getElementById("row");
+  const column = document.getElementById("column");
+
+  window.onmessage = (e) => {
+    xBox.value = e.data.pluginMessage.xVal ? e.data.pluginMessage.xVal : 28;
+    yBox.value = e.data.pluginMessage.yVal ? e.data.pluginMessage.yVal : 48;
+    const paddingPos = e.data.pluginMessage.paddingPos;
+    const numberingType = e.data.pluginMessage.numberingType;
+    pageNumber.value = e.data.pluginMessage.pageNumber
+      ? e.data.pluginMessage.pageNumber
+      : 1;
+
+    if (paddingPos == -1) {
+      bottomRight.checked = true;
+    } else {
+      topLeft.checked = true;
+    }
+
+    if (numberingType == -1) {
+      row.checked = true;
+    } else {
+      column.checked = true;
+    }
+  };
+  document.getElementById("create").onclick = () => {
+    const textbox = document.getElementById("start");
+    const count = parseInt(textbox.value, 10);
+    const xBox = document.getElementById("xcor");
+    const xVal = xBox.value;
+
+    const yBox = document.getElementById("ycor");
+    const yVal = yBox.value;
+
+    const numberingType = document.querySelector(
+      "input[name=numberingType]:checked"
+    ).value;
+
+    // const xInput = document.querySelector("#xcor");
+    // const yInput = document.querySelector("#ycor");
+    // xInput.value = xVal;
+    // yInput.value = yVal;
+
+    const paddingFlipper = document.querySelector(
+      "input[name=paddingType]:checked"
+    ).value;
+    parent.postMessage(
+      {
+        pluginMessage: {
+          type: "create-rectangles",
+          count,
+          paddingFlipper,
+          xVal,
+          yVal,
+          numberingType,
+        },
+      },
+      "*"
+    );
+  };
+
+  // document.getElementById('cancel').onclick = () => {
+  //   parent.postMessage({ pluginMessage: { type: 'cancel' } }, '*')
+  // }
+</script>
